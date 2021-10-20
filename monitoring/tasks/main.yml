@@ -1,0 +1,16 @@
+---
+# tasks file for nginx-demo
+- name: Create installation dir
+  file:
+    path: "{{ workdir }}"
+    state: directory
+
+- name: Copy src folder
+  copy:
+    src: src/
+    dest: "{{ workdir }}"
+
+- name: Start up grafana/prometheus/caddy etc.
+  shell: docker-compose up -d --remove-orphans
+  args:
+    chdir: "{{ workdir }}"

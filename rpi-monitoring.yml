@@ -1,0 +1,11 @@
+- hosts: all
+  become: yes
+  roles:
+    - { role: monitoring, tags: monitoring }
+
+
+  tasks:
+  - name: Congratulations!
+    debug:
+      msg:
+        - "Monitoring stack successfully installed!"
