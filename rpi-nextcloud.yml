@@ -2,10 +2,10 @@
   become: yes
   roles:
     - { role: docker, tags: docker }
-    - { role: nextcloud, tags: nextcloud }
+    - { role: nginx-demo, tags: nginx-demo }
 
   tasks:
   - name: Congratulations!
     debug:
       msg:
-        - "Your Raspi is ready now!"
+        - "Raspi is ready now!"

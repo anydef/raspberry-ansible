@@ -53,101 +53,6 @@ Run the Ansible playbook with:
 ansible-playbook rpi-nextcloud.yml -i hosts
 ```
 
-
-### Install Next-Cloud with Ansible & Docker
-
-See https://hub.docker.com/_/nextcloud/
-
-Choose an appropriate `docker-compose.yml` for you - this one may be a good choice, as it inherits an front-end reverseproxy & let's encrypt for security reasons, alongside a Postgres for your data, that can easily backuped later:
-
-https://github.com/nextcloud/docker/blob/master/.examples/docker-compose/with-nginx-proxy/postgres/apache/docker-compose.yml
-
-MariaDB didn't work for me, as it wasn't able to pull the MariaDB docker image (maybe this image isn't available for `armhf` any more?)
-
-```
-$ sudo docker pull mariadb
-Using default tag: latest
-latest: Pulling from library/mariadb
-no matching manifest for unknown in the manifest list entries
-```
-
-Here's my [docker-compose.yml](nextcloud/templates/docker-compose.yml.j2) - I don't like the `*.env` files and have those environment variables inside my `docker-compose.yml` and the values (later) in Ansible group_vars:
-
-```
-version: '3'
-
-services:
-  db:
-    image: postgres:alpine
-    restart: always
-    volumes:
-      - db:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-
-  app:
-    image: nextcloud:apache
-    restart: always
-    volumes:
-      - nextcloud:/var/www/html
-    environment:
-      - VIRTUAL_HOST=
-      - LETSENCRYPT_HOST=
-      - LETSENCRYPT_EMAIL=
-      - POSTGRES_HOST=db
-      - POSTGRES_PASSWORD=
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-    depends_on:
-      - db
-    networks:
-      - proxy-tier
-      - default
-
-  proxy:
-    build: ./proxy
-    restart: always
-    ports:
-      - 80:80
-      - 443:443
-    labels:
-      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
-    volumes:
-      - certs:/etc/nginx/certs:ro
-      - vhost.d:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    networks:
-      - proxy-tier
-
-  letsencrypt-companion:
-    image: jrcs/letsencrypt-nginx-proxy-companion
-    restart: always
-    volumes:
-      - certs:/etc/nginx/certs
-      - vhost.d:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - proxy-tier
-    depends_on:
-      - proxy
-
-volumes:
-  db:
-  nextcloud:
-  certs:
-  vhost.d:
-  html:
-
-networks:
-  proxy-tier:
-
-```
-
-
 # Molecule?
 
 ### Use Molecule with Ansible to develop a role for your Pi
@@ -212,35 +117,6 @@ verifier:
     v: 1
 
 ```
-
-### Install Docker on our Raspi emulated with Docker (Docker-in-Docker)
-
-As described in [Continuous Infrastructure with Ansible, Molecule & TravisCI](https://blog.codecentric.de/en/2018/12/continuous-infrastructure-ansible-molecule-travisci/) we also need to install Docker in Docker. Add the [prepare-docker-in-docker](docker/molecule/default/prepare-docker-in-docker.yml) as described in the post and rebuild your project to Molecule multi scenario style (enhance the docs here!).
-
-`cd` into `rpi-nextcloud` and run:
-
-```
-molecule --debug create
-```
-
-### Latest state (13.01.2019):
-
-There are Qemu problems - seem that Docker is unable to fully emulate `armhf`:
-
-```
-$ docker exec -it 44 sh
-# docker ps
-qemu: uncaught target signal 4 (Illegal instruction) - core dumped
-Illegal instruction
-```
-
-
-### Switch over to Hyperiot OS
-
-So it's not that easy to emulate the Docker installation on an x86 hardware (like MacOS) - so the whole Molecule idea for the Docker installation would lead to an custom Molecule driver development for Qemu (see https://gist.github.com/hfreire/5846b7aa4ac9209699ba for example).
-
-For now I don't have that much time, so I'll go with the great Docker-enabled Raspbian releases from 
-
 
 # Links
 
