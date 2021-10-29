@@ -44,79 +44,18 @@ Prereq: Have your public key available (e.g. by generating a new keypair with `s
 ssh-copy-id -i ~/.ssh/id_rsa.pub pi@raspberrypi.local
 ```
 
+### Configure env variables
+Goto ```monitoring/files/src```. 
+Copy ```.env.example``` to ```.env``` and set desired grafana username and password.
 
 ### Install Docker with Ansible
 
 Run the Ansible playbook with:
 
 ```
-ansible-playbook rpi-nextcloud.yml -i hosts
+ansible-playbook rpi-docker.yml -i hosts
 ```
 
-# Molecule?
-
-### Use Molecule with Ansible to develop a role for your Pi
-
-Now we have SSH running, we should be able to use Ansible with our Raspi! As we are developing infrastructure code, we shouldn't miss to make use of [Test-driven development (TDD)](https://en.wikipedia.org/wiki/Test-driven_development) - therefore we also use Molecule & Testinfra. If you don't know them, read this post about [Test-driven infrastructure development with Ansible & Molecule](https://blog.codecentric.de/en/2018/12/test-driven-infrastructure-ansible-molecule/) and come back here.
-
-Be sure to have Ansible & Molecule installed. As we need to have a testing infrastructure ready, we should install Docker too. Use the package manager of your choice for Ansible & Docker but always use `pip` for Molecule (and for `docker-py`, which is needed for Molecule + Docker integration)
-
-```
-brew install ansible
-brew install docker
-brew install python
-pip3 install molecule
-pip3 install docker-py
-```
-
-Now let's initiate a new Ansible role skeleton with Molecule:
-
-```
-molecule init role --driver-name docker --role-name rpi-nextcloud --verifier-name testinfra
-```
-
-As we need to emulate a PI on our Mac/Win/Linux machine to test what we're doing with Ansible, we need to keep in mind that a Raspberry uses ARM instead of x86/amd64 architecture! So we need a Docker image, that is based on ARM. Luckily there is [resin/rpi-raspbian](https://hub.docker.com/r/resin/rpi-raspbian/), which is maintained quite well. We could have also started with [HyperiotOS](https://blog.hypriot.com/getting-started-with-docker-on-your-arm-device/), which is also a great starting point. But then we also need to flash this as the Raspberry image already at the beginning - maybe I'll give it a try later, for now I'll stick to the standard raspbian image.
-
-So let´s change the Docker image inside our [molecule.yml](docker/molecule/default/molecule.yml):
-
-```
-scenario:
-  # default scenario is Docker
-  name: default
-
-driver:
-  name: docker
-platforms:
-  - name: docker-rpi
-    image: resin/rpi-raspbian
-    privileged: true
-
-provisioner:
-  name: ansible
-  lint:
-    name: ansible-lint
-    enabled: false
-  playbooks:
-    prepare: prepare-docker-in-docker.yml
-    converge: ../playbook.yml
-
-lint:
-  name: yamllint
-  enabled: false
-verifier:
-  name: testinfra
-  directory: ../tests/
-  env:
-    # get rid of the DeprecationWarning messages of third-party libs,
-    # see https://docs.pytest.org/en/latest/warnings.html#deprecationwarning-and-pendingdeprecationwarning
-    PYTHONWARNINGS: "ignore:.*U.*mode is deprecated:DeprecationWarning"
-  lint:
-    name: flake8
-  options:
-    # show which tests where executed in test output
-    v: 1
-
-```
 
 # Links
 

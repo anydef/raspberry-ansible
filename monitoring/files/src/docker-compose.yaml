@@ -11,7 +11,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_USERS_ALLOW_SIGN_UP=true
     restart: always
     expose:
       - 3000
@@ -40,18 +40,18 @@ services:
       - monitor-net
     labels:
       org.label-schema.group: "monitoring"
-#
-#  pushgateway:
-#    image: prom/pushgateway:v1.2.0
-#    container_name: pushgateway
-#    restart: unless-stopped
-#    expose:
-#      - 9091
-#    networks:
-#      - monitor-net
-#    labels:
-#      org.label-schema.group: "monitoring"
-#
+
+  pushgateway:
+    image: prom/pushgateway:v1.2.0
+    container_name: pushgateway
+    restart: unless-stopped
+    expose:
+      - 9091
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
 
   nodeexporter:
     image: prom/node-exporter
@@ -75,14 +75,15 @@ services:
       org.label-schema.group: "monitoring"
 
   cadvisor:
-    image: gcr.io/google-containers/cadvisor
+    image: zcube/cadvisor
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
-      #- /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
+      - /dev/disk/:/dev/disk:ro
+      - /cgroup:/cgroup:ro #doesn't work on MacOS only for Linux
     restart: always
     expose:
       - 8080
@@ -90,31 +91,33 @@ services:
       - monitor-net
     labels:
       org.label-schema.group: "monitoring"
-#
-#  alertmanager:
-#    image: prom/alertmanager:v0.20.0
-#    container_name: alertmanager
-#    volumes:
-#      - ./alertmanager:/etc/alertmanager
-#    command:
-#      - '--config.file=/etc/alertmanager/config.yml'
-#      - '--storage.path=/alertmanager'
-#    restart: unless-stopped
-#    expose:
-#      - 9093
-#    networks:
-#      - monitor-net
-#    labels:
-#      org.label-schema.group: "monitoring"
+
+  alertmanager:
+    image: prom/alertmanager:v0.20.0
+    container_name: alertmanager
+    volumes:
+      - ./alertmanager:/etc/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    restart: unless-stopped
+    expose:
+      - 9093
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
 
   caddy:
     image: caddy
     container_name: caddy
     ports:
       - "3000:3000"
+      - "8001:8001"
+      - "8080:8080"
       - "9090:9090"
-      - "9093:9093"
       - "9091:9091"
+      - "9093:9093"
     volumes:
       - ./caddy:/etc/caddy
     environment:

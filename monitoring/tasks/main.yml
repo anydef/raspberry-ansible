@@ -10,7 +10,14 @@
     src: src/
     dest: "{{ workdir }}"
 
+
+
+- name: Stop containers.
+  shell: docker-compose down --remove-orphans
+  args:
+    chdir: "{{ workdir }}"
+
 - name: Start up grafana/prometheus/caddy etc.
-  shell: docker-compose up -d --remove-orphans
+  shell: docker-compose up -d --remove-orphans --force-recreate --always-recreate-deps  --build
   args:
     chdir: "{{ workdir }}"
